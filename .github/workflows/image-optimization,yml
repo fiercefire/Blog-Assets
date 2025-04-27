@@ -1,0 +1,45 @@
+name: Image Optimization
+
+on:
+  push:
+    paths:
+      - '**/*.png'  # Trigger on PNG, JPEG, and JPG files
+      - '**/*.jpeg'
+      - '**/*.jpg'
+  pull_request:
+    paths:
+      - '**/*.png'
+      - '**/*.jpeg'
+      - '**/*.jpg'
+
+jobs:
+  optimize-images:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v3
+
+    - name: Install required tools
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y cwebp
+
+    - name: Optimize images to WebP (Lossless, Quality 90)
+      run: |
+        # Find and convert all images to WebP
+        find . -type f \( -iname \*.jpg -o -iname \*.jpeg -o -iname \*.png \) -exec sh -c '
+          for img; do
+            webp_img="${img%.*}.webp"
+            cwebp -lossless -q 90 "$img" -o "$webp_img"  # Lossless conversion with quality 90
+            echo "Converted $img to $webp_img"
+          done
+        ' sh {} +
+
+    - name: Commit and push WebP images
+      run: |
+        git config --global user.name 'github-actions'
+        git config --global user.email 'github-actions@github.com'
+        git add .
+        git commit -m 'Add optimized lossless WebP images'
+        git push
